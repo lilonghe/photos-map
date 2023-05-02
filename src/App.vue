@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import exifr from 'exifr';
-// import heic2any from "heic2any";
 import { onMounted, ref, watch } from 'vue';
+import { ModalsContainer, useModal } from 'vue-final-modal'
+import ModalDetail from './components/ModalDetail.vue'
 
 declare const AMap: any;
 
 const fileExifList = ref<any>([])
+const targetExif = ref<any>()
 let amap: any;
 
 const onChange = (e: Event) => {
@@ -29,6 +31,7 @@ const onChange = (e: Event) => {
           ...info,
           name: file.name,
           thumbnailUrl,
+          file,
         })
       }
     } catch(err) {
@@ -36,6 +39,36 @@ const onChange = (e: Event) => {
     }
   });
 }
+
+const onCapture = () => {
+  let canvas = document.querySelector('.amap-layer') as HTMLCanvasElement;
+  let img = canvas.toDataURL('image/jpeg');
+  var link = document.createElement('a');
+  link.download = 'photos-map-' + new Date().getTime() + '.jpeg';
+  link.href = img;
+  link.click();
+}
+
+const { open: openDetailModal } = useModal({
+    component: ModalDetail,
+    attrs: {
+      exif: targetExif
+    }
+})
+
+const onSelectFileExif = (exif: any) => {
+  targetExif.value = exif
+  openDetailModal()
+  if (exif.longitude) {
+    amap.setZoomAndCenter(8, [exif.longitude, exif.latitude])
+  }
+}
+
+const onMapSelectFileExif = (exif: any) => {
+  targetExif.value = exif
+  openDetailModal()
+}
+
 
 onMounted(() => {
   amap = new AMap.Map("map", {
@@ -52,11 +85,6 @@ onMounted(() => {
 watch(fileExifList, () => {
   fileExifList.value.map((info: any) => {
     if (info.longitude) {
-      // let marker = new AMap.Marker({
-      //   position: [info.longitude, info.latitude],
-      //   offset: new AMap.Pixel(-13, -30)
-      // });
-      // marker.setMap(amap);
       var circleMarker = new AMap.CircleMarker({
           center: [info.longitude, info.latitude],
           radius: 8,
@@ -67,23 +95,19 @@ watch(fileExifList, () => {
           fillOpacity:0.5,
           zIndex: 10,
           bubble: true,
-          // cursor: 'pointer',
-          // clickable: true
+          cursor: 'pointer',
+          clickable: true,
         })
         circleMarker.setMap(amap)
+        circleMarker.on('click', () => {
+          onMapSelectFileExif(info)
+        })
     }
   })
   amap.setFitView(null, false, [150, 60, 100, 60]);
 },{ deep: true })
 
-const capture = () => {
-  let canvas = document.querySelector('.amap-layer') as HTMLCanvasElement;
-  let img = canvas.toDataURL('image/jpeg');
-  var link = document.createElement('a');
-  link.download = 'photos-map-' + new Date().getTime() + '.jpeg';
-  link.href = img;
-  link.click();
-}
+
 
 </script>
 
@@ -91,11 +115,12 @@ const capture = () => {
   <div class="map-container">
     <div class="file-side">
       <div>
-        <input type="file" @change="onChange" multiple />
+        <input type="file" @change="onChange" multiple 
+          class="cursor-pointer mr-1 border border-gray-200 shadow-sm rounded-md text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400 file:bg-transparent file:border-0 file:bg-gray-100 file:py-2 file:px-4 dark:file:bg-gray-700 dark:file:text-gray-400" />
       </div>
 
       <div class="file-list">
-        <div v-for="item in fileExifList" v-bind:key="item" class="file-item">
+        <div v-for="item in fileExifList" v-bind:key="item" class="file-item" @click="onSelectFileExif(item)">
           <img :src="item.thumbnailUrl" v-if="item.thumbnailUrl" />
           <span v-if="!item.thumbnailUrl" class="thumbnail-nil" title="Do not support show thumbnail"></span>
           <span>{{item.name}}</span>
@@ -104,8 +129,9 @@ const capture = () => {
     </div>
     <div id="map"></div>
 
-    <div class="capture" @click="capture" title="Screenshot">📷</div>
+    <div class="capture" @click="onCapture" title="Screenshot">📷</div>
   </div>
+  <ModalsContainer />
 </template>
 
 <style scoped>
@@ -130,8 +156,14 @@ const capture = () => {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 6px;
   font-size: 14px;
-  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.file-item:hover {
+  background: rgba(0,0,0,.02);
+  border-radius: 4px;
 }
 
 .file-item img, .thumbnail-nil {
