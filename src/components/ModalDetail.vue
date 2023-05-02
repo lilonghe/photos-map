@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { VueFinalModal } from 'vue-final-modal'
 import { gps2Addr, byte2Size } from '../utils'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 
 const props = defineProps<{
   exif: any
-}>()
-const emit = defineEmits<{
-  (e: 'confirm'): void
 }>()
 
 const address = ref<string>()
