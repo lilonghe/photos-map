@@ -3,6 +3,7 @@ import exifr from 'exifr';
 import { onMounted, ref } from 'vue';
 import { ModalsContainer, useModal } from 'vue-final-modal'
 import ModalDetail from './components/ModalDetail.vue'
+import ModalGuide from './components/ModalGuide.vue'
 
 declare const AMap: any;
 
@@ -55,6 +56,10 @@ const { open: openDetailModal } = useModal({
     }
 })
 
+const { open: openGuideModal } = useModal({
+    component: ModalGuide,
+})
+
 const onSelectFileExif = (exif: any) => {
   targetExif.value = exif
   openDetailModal()
@@ -98,6 +103,11 @@ const addMarker = (info: any) => {
 }
 
 onMounted(() => {
+  if (!localStorage.getItem('guide')) {
+    openGuideModal()
+    localStorage.setItem('guide', '1')
+  }
+
   amap = new AMap.Map("map", {
       resizeEnable: true,
       center: [104.919666,33.774999],
