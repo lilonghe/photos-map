@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import exifr from 'exifr';
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 import { ModalsContainer, useModal } from 'vue-final-modal'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalGuide from './components/ModalGuide.vue'
-
-declare const AMap: any;
+import { gps2AddrDetail } from './utils'
 
 const fileExifList = ref<any[]>([])
 const targetExif = ref<any>()
 let amap: any;
+const highlightPos = ref('0')
+const reverseLoading = ref(false)
+
+const distWorld = new AMap.DistrictLayer.Country({
+  zIndex: 10,
+  zooms: [2, 15],
+  SOC: 'CHN',
+  depth: 2
+})
 
 const onChange = async (e: Event) => {
   const files = Array.from((e.target as HTMLInputElement).files || []);
@@ -32,6 +40,7 @@ const onChange = async (e: Event) => {
         }
         saveInfo.marker = addMarker(saveInfo)
         fileExifList.value.push(saveInfo)
+        // reverseAddress(saveInfo)
       }
     } catch(err) {
       console.error(err)
@@ -102,6 +111,47 @@ const addMarker = (info: any) => {
   }
 }
 
+const reverseAllAddress = async () => {
+  reverseLoading.value = true
+  for(let i=0; i< fileExifList.value.length; i++) {
+    if (fileExifList.value[i].longitude && !fileExifList.value[i].address) {
+      await reverseAddress(fileExifList.value[i])
+    }
+  }
+  reverseLoading.value = false
+  redrawMap()
+}
+
+const reverseAddress = async (info: any) => {
+  await gps2AddrDetail(info.longitude, info.latitude).then((res: any) => {
+    if (res.addressComponent) {
+      info.address = res.addressComponent
+    }
+  })
+}
+
+const redrawMap = () => {
+  distWorld.setStyles({
+    'stroke-width': .5,
+    'fill': function(data: any) {
+      if (highlightPos.value !== '0' && fileExifList.value.find(item => {
+        if (!item.address) return false
+        if (highlightPos.value === 'province' && item.address.adcode.substr(0, 2) === data.adcode.toString().substr(0, 2)) {
+          return true
+        }
+        if (highlightPos.value === 'city' && item.address.citycode === data.citycode) {
+          return true
+        }
+        return false
+      })) {
+        
+        return 'rgb(65,150,255)'
+      }
+      return 'rgba(255,255,255,1)'
+    }
+  })
+}
+
 onMounted(() => {
   if (!localStorage.getItem('guide')) {
     openGuideModal()
@@ -118,6 +168,17 @@ onMounted(() => {
       }
   });
 })
+
+watch(() => highlightPos, (val: any) => {
+  if (val === '0') {
+    amap.remove(distWorld)
+  } else {
+    reverseAllAddress()
+    amap.remove(distWorld)
+    amap.add(distWorld)
+  }
+  redrawMap()
+}, { deep: true })
 </script>
 
 <template>
@@ -138,7 +199,24 @@ onMounted(() => {
         <div v-if="!fileExifList.length" class="text-center my-[10vh] text-gray-500">No file has been selected yet</div>
       </div>
     </div>
-    <div id="map"></div>
+    <div class="flex flex-col flex-1">
+      <div class="h-[40px] pl-2 flex items-center">
+        <div class="text-gray-500">
+           <label for="">高亮地区：</label>
+          <select v-model="highlightPos" class="outline-none">
+            <option value="0">不显示</option>
+            <option value="province">所在省</option>
+            <option value="city">所在市</option>
+          </select>
+        </div>
+       <div class="ml-auto">
+          <button class="border py-1 px-2 ml-2 rounded text-gray-500 hover:!disabled:bg-slate-50 disabled:cursor-not-allowed disabled:text-gray-300" 
+            @click="reverseAllAddress"
+            :disabled="reverseLoading || fileExifList.length === 0">查询地区{{ reverseLoading ? '(查询中)':''}}</button>
+       </div>
+      </div>
+      <div id="map" class="mt-[10px]"></div>
+    </div>
 
     <div class="capture" @click="onCapture" title="Screenshot">📷</div>
   </div>
