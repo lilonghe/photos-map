@@ -40,13 +40,15 @@ const onChange = async (e: Event) => {
         }
         saveInfo.marker = addMarker(saveInfo)
         fileExifList.value.push(saveInfo)
-        // reverseAddress(saveInfo)
       }
     } catch(err) {
       console.error(err)
     }
   }
   amap.setFitView(null, false, [150, 60, 100, 60]);
+  if (highlightPos.value !== '0') {
+    reverseAllAddress()
+  }
 }
 
 const onCapture = () => {
@@ -85,6 +87,7 @@ const onMapSelectFileExif = (exif: any) => {
 const onDelFile = (name: string) => {
   let i = fileExifList.value.findIndex((item: any) => item.name === name)
   fileExifList.value[i].marker?.setMap(null)
+  redrawMap()
   fileExifList.value.splice(i, 1)
 }
 
@@ -210,15 +213,18 @@ watch(() => highlightPos, (val: any) => {
           </select>
         </div>
        <div class="ml-auto">
-          <button class="border py-1 px-2 ml-2 rounded text-gray-500 hover:!disabled:bg-slate-50 disabled:cursor-not-allowed disabled:text-gray-300" 
-            @click="reverseAllAddress"
-            :disabled="reverseLoading || fileExifList.length === 0">查询地区{{ reverseLoading ? '(查询中)':''}}</button>
+          <div class="text-gray-500" v-if="reverseLoading">查询地区中......</div>
        </div>
       </div>
       <div id="map" class="mt-[10px]"></div>
     </div>
 
-    <div class="capture" @click="onCapture" title="Screenshot">📷</div>
+    <div class="float-actions">
+      <div class="go-github">
+        <a href="https://github.com/lilonghe/photos-map"><img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" /></a>
+      </div>
+      <div class="capture" @click="onCapture" title="Screenshot">📷</div>
+    </div>
   </div>
   <ModalsContainer />
 </template>
@@ -318,12 +324,24 @@ watch(() => highlightPos, (val: any) => {
   /* min-height: 500px; */
 }
 
-.capture {
+.float-actions {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.capture {
   cursor: pointer;
   transform: scale(2);
+}
+
+.go-github {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 @media (max-width: 768px) {
