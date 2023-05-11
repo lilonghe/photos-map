@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import exifr from 'exifr';
-import { nextTick, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { ModalsContainer, useModal } from 'vue-final-modal'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalGuide from './components/ModalGuide.vue'
