@@ -109,6 +109,15 @@ const addMarker = (info: any) => {
       circleMarker.setMap(amap)
       circleMarker.on('click', () => {
         onMapSelectFileExif(info)
+        const ele = document.querySelector(`div[data-id="${info.name}"]`)
+        if (ele) {
+          ele.scrollIntoView({ behavior: 'auto' });
+          (ele as HTMLElement).style.boxShadow = 'inset 0 0 1px 2px blue'
+          setTimeout(() => {
+            (ele as HTMLElement).style.boxShadow = 'none'
+          }, 2000)
+        }
+        
       })
       return circleMarker
   }
@@ -193,7 +202,7 @@ watch(() => highlightPos, (val: any) => {
       </div>
 
       <div class="file-list">
-        <div v-for="item in fileExifList" v-bind:key="item" class="file-item pr-2" @click="onSelectFileExif(item)">
+        <div v-for="item in fileExifList" v-bind:key="item" class="file-item pr-2" @click="onSelectFileExif(item)" :data-id="item.name">
           <img class="file-thumbnail" :src="item.thumbnailUrl" v-if="item.thumbnailUrl" />
           <span v-if="!item.thumbnailUrl" class="thumbnail-nil" title="Do not support show thumbnail"></span>
           <span class="flex-1 text-ellipsis overflow-hidden" :title="item.name">{{item.name}}</span>
