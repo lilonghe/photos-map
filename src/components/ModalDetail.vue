@@ -47,13 +47,13 @@ onMounted(() => {
                 <div>ISO: </div><div>{{ exif.ISOSpeed || exif.ISO }}</div>
             </div>
             <div>
-                <div>光圈: </div><div>f/{{ exif.FNumber }}</div>
+                <div>光圈: </div><div>f/{{ exif.FNumber?.toFixed(2) }}</div>
             </div>
             <div>
                 <div>快门: </div><div>{{ exif.ExposureTime < 1 ? ('1/' + (1000 / exif.ExposureTime / 1000).toFixed()) : exif.ExposureTime }}s</div>
             </div>
             <div>
-                <div>焦距: </div><div>{{ exif.FocalLength }}mm</div>
+                <div>焦距: </div><div>{{ exif.FocalLength.toFixed() }}mm</div>
             </div>
         </div>
 
